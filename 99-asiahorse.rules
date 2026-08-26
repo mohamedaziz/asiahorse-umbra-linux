@@ -1,0 +1,2 @@
+# AsiaHorse Umbra ARGB hub (QinHeng "USBFAN") - allow user-space HID control
+KERNEL=="hidraw*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="fe05", MODE="0660", GROUP="plugdev"
