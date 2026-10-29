@@ -1,0 +1,13 @@
+# Lighting at login (user service). Edit ExecStart for another look, e.g.
+#   asiahorse.py effect rainbow           (hub effect, no streaming, process exits)
+#   asiahorse.py animate wave 00A0FF A000FF  (software animation, keeps running)
+[Unit]
+Description=AsiaHorse Umbra lighting
+
+[Service]
+ExecStart=/usr/bin/python3 -u %h/.local/bin/asiahorse.py animate wave 00A0FF A000FF
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

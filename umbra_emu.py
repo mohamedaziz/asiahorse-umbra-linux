@@ -20,7 +20,7 @@ import struct
 import sys
 import time
 
-from asiahorse import (PID, PORTS, PAYLOAD, LEDS_PER_PACKET, VID,
+from asiahorse import (EFFECT_BLOCK, EFFECTS, PID, PORTS, PAYLOAD, LEDS_PER_PACKET, VID,
                        PORT_RECORD_SIZE, PORT_RECORDS_OFFSET, checksum)
 
 # linux/uhid.h
@@ -56,6 +56,7 @@ class Emulator:
         self.software_mode = False
         self.passthrough = None
         self.fan = None          # last FB value
+        self.effect = "-"        # last 03 built-in effect
         self.boot_mode = 0xFF    # 0xFF memory, 0x01 fixed
         self.self_check = 0xFF   # 0xFF enabled, 0x01 disabled
         self.pending = {}
@@ -126,6 +127,18 @@ class Emulator:
             self.say("FC save to flash + REBOOT")
             self.reenumerate(REENUMERATE_S)
             self.software_mode = False
+        elif cmd == 0x03 and body[1:3] == b"\xff\xff" and len(body) == 3 + EFFECT_BLOCK:
+            eff, speed, direction, bright = body[3:7]
+            cols = [tuple(body[7 + i * 3:10 + i * 3]) for i in range(4)]
+            name = EFFECTS[eff] if eff < len(EFFECTS) else f"#{eff}"
+            if self.software_mode:
+                self.say("03 effect while in software mode (FD 00 missing?)")
+            # static preview only: the real animation runs in the hub firmware
+            scale = bright / 255
+            pal = [tuple(round(c * scale) for c in rgb) for rgb in cols]
+            self.leds = [pal[0] if eff == 0 else pal[i % 4] for i in range(len(self.leds))]
+            self.effect = f"{name} speed={speed} dir={direction} bright={round(bright / 2.55)}%"
+            self.say(f"03 effect {self.effect}")
         elif cmd == 0x07:
             self.say("07 auto-detect LED count")
         elif cmd == 0x08 and len(body) == 2:
@@ -168,7 +181,8 @@ class Emulator:
         self.last_draw = now
         out = ["\x1b[H\x1b[2J umbra_emu  1a86:fe05  "
                f"mode={'software' if self.software_mode else 'hardware'}  "
-               f"fan={self.fan if self.fan is not None else '-'}  frames={self.frames}\n"]
+               f"fan={self.fan if self.fan is not None else '-'}  frames={self.frames}\n"
+               f" effect={self.effect}\n"]
         pos = 0
         for p, n in enumerate(self.ports):
             if n:

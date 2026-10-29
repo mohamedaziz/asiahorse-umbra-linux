@@ -1,0 +1,12 @@
+# Fan speed on the CPU temperature (user service).
+# Install: see README "Run at login". Stopping it sets the fans to 100 %.
+[Unit]
+Description=AsiaHorse Umbra fan curve
+
+[Service]
+ExecStart=/usr/bin/python3 -u %h/.local/bin/asiahorse.py fan-curve
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

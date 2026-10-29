@@ -21,6 +21,48 @@ python3 asiahorse.py color 113 230 207
 python3 asiahorse.py off
 ```
 
+More commands (see `python3 asiahorse.py help` for the full list):
+
+```bash
+python3 asiahorse.py effect rainbow                 # built-in hub effect, no streaming
+python3 asiahorse.py effect breath speed=2 bright=40 00FFFF
+python3 asiahorse.py animate wave 00A0FF A000FF     # software animation, Ctrl-C stops
+python3 asiahorse.py fan 60                         # fan speed, percent
+python3 asiahorse.py fan-curve 40:20,55:45,62:70,66:100   # speed on CPU temp (k10temp)
+python3 asiahorse.py lights hardware                # hand the LEDs back to the hub
+```
+
+Built-in effects: static, rainbow, gradient-rainbow, breath, breath-rainbow,
+runway, tile, fade-out, trail, scan, brick, disco, pulse, flash, address.
+
+`fan-curve` switches fan speed control to software, follows the CPU
+temperature every 2 s, and sets the fans to 100 % when it stops (the hub would
+otherwise keep the last speed). An unreadable temperature also means 100 %.
+
+## Run at login
+
+```bash
+install -Dm755 asiahorse.py ~/.local/bin/asiahorse.py
+install -Dm644 systemd/umbra-*.service -t ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now umbra-fan.service umbra-lights.service
+```
+
+Edit `ExecStart` in `umbra-lights.service` for another effect.
+
+## Testing without the hub
+
+`umbra_emu.py` creates a virtual `1a86:fe05` hub through `/dev/uhid`, so the
+tool finds it under `/dev/hidraw*` exactly like the real one. It answers the
+native commands, reproduces the quirks below and draws the LEDs in the
+terminal. It follows this README's protocol: only real hardware can confirm it.
+
+```bash
+sudo python3 umbra_emu.py --ports 12,12,12,12,12,12,0,0,0,0   # terminal 1
+python3 asiahorse.py animate rainbow                           # terminal 2
+python3 test_protocol.py        # protocol self-check, no root, no device
+```
+
 ## Protocol documentation
 
 Everything below was cross-validated from two independent sources (a

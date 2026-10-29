@@ -14,6 +14,7 @@ class FakeHub:
 def make_emulator(ports):
     emu = umbra_emu.Emulator.__new__(umbra_emu.Emulator)
     emu.ports, emu.software_mode, emu.passthrough, emu.fan = ports, False, None, None
+    emu.effect = "-"
     emu.boot_mode, emu.self_check = 0xFF, 0xFF
     emu.pending, emu.frames, emu.leds, emu.log = {}, 0, [(0, 0, 0)] * sum(ports), []
     emu.replies, emu.reenumerations = [], 0
@@ -77,6 +78,24 @@ def main():
     st = emu.replies.pop()
     assert st[:2] == b"\x52\x42" and st[23] == 0xFF and st[24] == 0x01  # self-check off above
     assert st[25] == asiahorse.checksum(st[:25])
+    # built-in effect: block layout as the vendor app builds it
+    opts = asiahorse.parse_effect_args(["speed=1", "bright=40", "00ffff"])
+    pkt = asiahorse.effect_packet(asiahorse.EFFECTS.index("static"), **opts)
+    assert pkt[2] == 60 and pkt[4:7] == b"\x03\xff\xff"
+    assert list(pkt[7:11]) == [0, 1, 1, 102]           # id, speed, dir default, 40 % x 2.55
+    assert pkt[11:17] == b"\x00\xff\xff\x00\xff\xff"   # static mirrors color 1 into color 2
+    assert pkt[59] == asiahorse.checksum(pkt[:59])
+    asiahorse.write(h, pkt)
+    assert emu.effect.startswith("static speed=1") and emu.leds[0] == (0, 102, 102)
+    # fan curve interpolation and software animation frame shape
+    c = asiahorse.DEFAULT_CURVE
+    assert asiahorse.curve_percent(c, 30) == 20 and asiahorse.curve_percent(c, 99) == 100
+    assert asiahorse.curve_percent(c, 47.5) == 32 and asiahorse.curve_percent(c, 64) == 85
+    for name in asiahorse.ANIMATIONS:
+        f = asiahorse.animation_frame(name, ports, 1.3, [(0, 160, 255)])
+        assert len(f) == sum(ports) and all(0 <= v <= 255 for rgb in f for v in rgb)
+    asiahorse.stream_frame(h, asiahorse.animation_frame("rainbow", ports, 0, []))
+    assert emu.leds == asiahorse.animation_frame("rainbow", ports, 0, [])
     print("OK protocol self-check")
 
 
