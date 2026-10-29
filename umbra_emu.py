@@ -116,6 +116,9 @@ class Emulator:
             self.say("FD 01 software mode: re-enumerating")
             self.reenumerate(REENUMERATE_S)
             self.software_mode = True
+        elif body == b"\xfd\x00":
+            self.software_mode = False
+            self.say("FD 00 lights back to hardware effects (re-enumeration unknown)")
         elif cmd == 0xFB and len(body) == 2:
             self.fan = body[1]
             self.say(f"FB fan PWM speed = {body[1]} (0x{body[1]:02x})")
@@ -127,7 +130,7 @@ class Emulator:
             self.say("07 auto-detect LED count")
         elif cmd == 0x08 and len(body) == 2:
             self.passthrough = body[1]
-            self.say(f"08 passthrough {body[1]:02x}")
+            self.say(f"08 fan speed control = {'software' if body[1] else 'board'} (?)")
         elif cmd in (0x0B, 0x0C) and len(body) == 2:
             if cmd == 0x0B:
                 self.boot_mode = body[1]

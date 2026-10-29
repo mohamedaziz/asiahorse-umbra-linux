@@ -44,8 +44,47 @@ payload, zero-padded.
 | `00`      | Status query (hub replies with a `52 42` frame)  |
 | `01 FF`   | Topology query (reply below)                     |
 | `FD 01`   | Enter software-controlled RGB mode (see quirks!) |
-| `08 00`   | Motherboard passthrough "on" (per the capture)   |
-| `08 01`   | Motherboard passthrough "off"                    |
+| `08 00/01`| Fan speed control authority (see vendor table below; formerly labelled "passthrough") |
+
+### Vendor app command table
+
+Read from the official Windows app (AsiaHorse UMBRA 3.5.5, a PyInstaller
+Python 3.8 build; its protocol module is named `agreement`), October 2026, for
+interoperability. Only command bytes and their meaning are recorded here, no
+vendor code. Names are the app's own function names; meanings are translated
+from the app's Chinese log strings. Nothing below is verified on hardware
+unless stated.
+
+| Body | App name | Meaning | Values seen in the app |
+|---|---|---|---|
+| `FB n` | `ARGB_pwm_speed` | fan PWM speed | percent: slider floors at 10, presets 10/45/48/100 and 20/60/80/100 |
+| `08 n` | `argb_cp_mcu_fan_speed` | fan speed control authority | `00` / `01` (motherboard sync toggle in the UI) |
+| `FD n` | `ARGB_MCU_C_changer` | lighting control authority | `00` / `01` (`01` = software streaming, verified) |
+| `0B n` | `argb_jiyi_on_effect` | power-on lighting | `FF` remembered effect (default), `01` fixed |
+| `0C n` | `argb_on_off_kaijizijian` | power-on LED self-check | `FF` on, `01` off |
+| `07` | `argb_auto_rgb_num` | auto-detect LED count | |
+| `95 n` | `ARGB_SYNC_effect_NO` | built-in effect number | |
+| `96 n` | `ARGB_SYNC_dengxiao_speed` | effect speed | |
+| `97 n` | `ARGB_SYNC_fangxiang` | effect direction | |
+| `99 n` | `ARGB_SYNC_liangdu` | brightness | |
+| `9A rgb…` | `ARGB_SYNC_yanse` | effect colors (flattened RGB list) | |
+| `9B` / `9C v rgb…` | `ARGB_SYNC_shiyin_*` | sound-reactive mode / level | |
+| `9D n` | `ARGB_SYNC_speed` | (logged as a fan speed command) | |
+| `9E rgb…` | `ARGB_SYNC_same_screen` | screen sync colors | |
+| `03 order n + 52 bytes` | `ARGB_ten_effect` | per-device effect | |
+| `02 id fn param` | `ARGB_dan_config` | per-device setting | |
+| `04 sn rgb… sound` | `ARGB_SYNC_shiyin_vaule_argb` | sound-reactive frame | |
+| `05 id 01` | `argb_fan_set` | select a device | |
+| `06` | `argb_fan_light_off` | lights off | |
+| `09` / `0A` | `argb_433peidui` / `argb_433qingchupeidui` | 433 MHz remote pair / unpair | |
+
+**Never send blindly** (firmware and flash operations): `FF` `ARGB_BOOT`
+(reboot into the bootloader), `FE` `ARGB_IAP` (firmware update), `FC`
+`argb_fan_save` (save to flash and reboot), `FA` `argb_fan_reset`, `F9`
+`argb_fan_save_effect`. This tool does not expose them.
+
+The app also talks to `robobloq.cn` (firmware and app updates, serial number
+registration): this Linux tool makes no network access.
 
 **Topology reply:** ten 5-byte records starting at offset 6:
 `[led_count, ?, ?, port_index, ?]` for ports 0–9.

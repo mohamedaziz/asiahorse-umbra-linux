@@ -21,9 +21,11 @@ Usage:
   asiahorse.py topology            # per-port LED counts (read-only)
   asiahorse.py color R G B         # all LEDs one color (0-255 each)
   asiahorse.py off                 # all LEDs dark
-  asiahorse.py passthrough on|off  # motherboard passthrough toggle
-                                   # (labels per the original capture;
-                                   # verify by eye, may be inverted)
+  asiahorse.py fan 10-100          # fan PWM speed, percent (FB)
+  asiahorse.py fan-control board|software    # who drives fan speed (08)
+  asiahorse.py lights hardware|software      # who drives the LEDs (FD)
+  asiahorse.py boot-effect memory|fixed      # power-on lighting (0B)
+  asiahorse.py self-check on|off             # power-on LED self-check (0C)
 
 Colors LATCH: the hub holds the last streamed frame with no refresh until
 power loss (which restores the hub's built-in effects). The diodes have no
@@ -170,7 +172,20 @@ def stream_color(h, ports: list, r: int, g: int, b: int, frames: int = 5) -> int
     return sent
 
 
-PASSTHROUGH = {"on": bytes([0x08, 0x00]), "off": bytes([0x08, 0x01])}
+# Settings commands, named after the vendor app (AsiaHorse UMBRA 3.5.5, see
+# README "Vendor app command table"). Value meanings marked (?) are inferred
+# from the app's UI code, not yet confirmed on hardware.
+SETTINGS = {
+    # 08 = fan speed control authority (app: argb_cp_mcu_fan_speed). Formerly
+    # labelled "passthrough"; the vendor app names it fan speed control.
+    "fan-control": {"board": bytes([0x08, 0x00]), "software": bytes([0x08, 0x01])},  # (?)
+    # FD = lighting control authority (app: ARGB_MCU_C_changer); 01 = software
+    # streaming (verified upstream), 00 = back to the hub's own effects (?)
+    "lights": {"hardware": bytes([0xFD, 0x00]), "software": bytes([0xFD, 0x01])},
+    "boot-effect": {"memory": bytes([0x0B, 0xFF]), "fixed": bytes([0x0B, 0x01])},
+    "self-check": {"on": bytes([0x0C, 0xFF]), "off": bytes([0x0C, 0x01])},
+}
+FAN_MIN, FAN_MAX = 10, 100  # FB takes a percentage; the vendor slider floors at 10
 
 
 def main() -> int:
@@ -210,11 +225,17 @@ def main() -> int:
             h = stabilize()
             n = stream_color(h, ports, 0, 0, 0)
             print(f"all dark - {n} bytes written")
-        elif cmd == "passthrough" and len(args) == 2 and args[1] in PASSTHROUGH:
-            write(h, native(PASSTHROUGH[args[1]]))
-            print(f"passthrough {args[1].upper()} sent (labels per the Reddit OP — verify by eye)")
+        elif cmd == "fan" and len(args) == 2:
+            pct = max(FAN_MIN, min(FAN_MAX, int(args[1])))
+            write(h, native(bytes([0xFB, pct])))
+            print(f"fan speed {pct} % sent (needs fan-control software)")
+        elif cmd in SETTINGS and len(args) == 2 and args[1] in SETTINGS[cmd]:
+            write(h, native(SETTINGS[cmd][args[1]]))
+            print(f"{cmd} {args[1]} sent")
         else:
-            print("usage: asiahorse.py status | topology | color R G B | off | passthrough on|off")
+            print("usage: asiahorse.py status | topology | color R G B | off | fan 10-100 |"
+                  " fan-control board|software | lights hardware|software |"
+                  " boot-effect memory|fixed | self-check on|off")
             return 1
         return 0
     finally:

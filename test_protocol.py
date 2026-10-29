@@ -60,9 +60,22 @@ def main():
     asiahorse.write(h, asiahorse.native(bytes([0xFB, 0x32])))
     assert emu.fan == 0x32
 
+    asiahorse.write(h, asiahorse.native(asiahorse.SETTINGS["fan-control"]["software"]))
+    assert emu.passthrough == 0x01
+    asiahorse.write(h, asiahorse.native(asiahorse.SETTINGS["self-check"]["off"]))
+    assert emu.self_check == 0x01
+    asiahorse.write(h, asiahorse.native(bytes([0xFD, 0x01])))
+    asiahorse.write(h, asiahorse.native(asiahorse.SETTINGS["lights"]["hardware"]))
+    assert not emu.software_mode
+
+    # settings commands carry the same wire format as the vendor app:
+    # [report 0] 52 42 len 00 cmd val sum, len counting the report byte (app: agreement.py)
+    pkt = bytes([0]) + asiahorse.native(bytes([0x0C, 0x01]))[:7]
+    assert pkt[3] == 7 and pkt[7] == sum(pkt[:7]) % 256
+
     asiahorse.write(h, asiahorse.native(bytes([0x00])))
     st = emu.replies.pop()
-    assert st[:2] == b"\x52\x42" and st[23] == 0xFF and st[24] == 0xFF
+    assert st[:2] == b"\x52\x42" and st[23] == 0xFF and st[24] == 0x01  # self-check off above
     assert st[25] == asiahorse.checksum(st[:25])
     print("OK protocol self-check")
 
