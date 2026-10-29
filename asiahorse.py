@@ -337,9 +337,11 @@ def parse_effect_args(args: list) -> dict:
 
 def main() -> int:
     args = sys.argv[1:]
-    if not args:
-        print(__doc__.splitlines()[-2].strip())
-        return 1
+    if not args or args[0] in ("help", "-h", "--help"):
+        print(__doc__)
+        print("hub effects:", " ".join(EFFECTS))
+        print("software animations:", " ".join(ANIMATIONS))
+        return 0 if args else 1
     h = open_hub()
     try:
         print("Opened:", h.node)
