@@ -1,2 +1,5 @@
 # AsiaHorse Umbra ARGB hub (QinHeng "USBFAN") - allow user-space HID control
 KERNEL=="hidraw*", ATTRS{idVendor}=="1a86", ATTRS{idProduct}=="fe05", MODE="0660", GROUP="plugdev"
+# Same hub matched on its HID name (0003:1A86:FE05.*): also covers the umbra_emu.py virtual hub,
+# which has no USB parent. uaccess = access for the logged-in desktop user, no group needed.
+SUBSYSTEM=="hidraw", KERNELS=="0003:1A86:FE05.*", TAG+="uaccess"
