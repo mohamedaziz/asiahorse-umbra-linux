@@ -12,7 +12,7 @@ ports on real hardware.
 
 ```bash
 # one-time: let your user talk to the hub (then replug or: sudo udevadm trigger)
-sudo cp 99-asiahorse.rules /etc/udev/rules.d/
+sudo cp 70-asiahorse.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && sudo udevadm trigger
 
 python3 asiahorse.py status          # read-only sanity check
