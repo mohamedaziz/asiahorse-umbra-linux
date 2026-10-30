@@ -16,7 +16,8 @@ export interface OrgbDevice { index: number; name: string; vendor: string; zones
 
 class Reader {
   o = 0
-  constructor(private b: Buffer) {}
+  private b: Buffer
+  constructor(b: Buffer) { this.b = b }
   u8() { return this.b.readUInt8(this.o++) }
   u16() { const v = this.b.readUInt16LE(this.o); this.o += 2; return v }
   u32() { const v = this.b.readUInt32LE(this.o); this.o += 4; return v }
