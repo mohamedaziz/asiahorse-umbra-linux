@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   animationFrame, ANIMATIONS, checksum, curvePercent, DEFAULT_CURVE, effectPacket, EFFECTS,
-  fanPacket, framePackets, native, parseStatus, parseTopology, rgbPacket,
+  fanPacket, frameIntervalMs, framePackets, native, parseStatus, parseTopology, rgbPacket,
 } from './protocol'
 
 describe('protocol', () => {
@@ -49,6 +49,11 @@ describe('protocol', () => {
     s.set([0x52, 0x42])
     s[23] = 0xff; s[24] = 0x01
     expect(parseStatus(s)).toEqual({ bootFixed: false, selfCheck: false })
+  })
+
+  it('caps the write rate: 1200 LEDs (V2 default) slows the frame rate', () => {
+    expect(frameIntervalMs(72)).toBe(33)    // 4 packets: 30 fps
+    expect(frameIntervalMs(1200)).toBe(240) // 60 packets: ~4 fps, 250 writes/s
   })
 
   it('interpolates the fan curve', () => {

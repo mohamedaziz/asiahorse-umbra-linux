@@ -4,7 +4,7 @@ import { cpuTemp, type FanRpm, fanRpms, Hub } from './hub'
 import { OpenRGB, type OrgbDevice } from './openrgb'
 import {
   animationFrame, type AnimationName, CMD, type Curve, curvePercent, effectPacket, type EffectName,
-  EFFECTS, type EffectOptions, FAN_MAX, FAN_MIN, fanPacket, ledTotal, native, type RGB,
+  EFFECTS, type EffectOptions, FAN_MAX, FAN_MIN, fanPacket, frameIntervalMs, ledTotal, native, type RGB,
 } from './protocol'
 
 const hub = new Hub()
@@ -111,7 +111,7 @@ ipcMain.handle('animate', (_e, name: AnimationName, colors: RGB[], speed: number
   animTimer = setInterval(() => {
     const leds = animationFrame(name, hub.ports, (Date.now() - t0) / 1000, colors, speed)
     try { hub.sendFrame(leds); state.preview = leds } catch (e) { stopAnimation(); state.error = (e as Error).message }
-  }, 33)
+  }, frameIntervalMs(ledTotal(hub.ports)))
 }))
 
 ipcMain.handle('stopAnimation', () => { stopAnimation(); push() })

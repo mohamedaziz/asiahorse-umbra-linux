@@ -217,14 +217,23 @@ def enter_software_mode(h):
     return stabilize()
 
 
-def animate(h, ports: list, name: str, colors: list, speed: float = 1.0, fps: int = 30):
-    """Streams until Ctrl-C. 4 packets x 30 fps for 72 LEDs stays well under the
-    ~378 writes/s the vendor app was measured sustaining (SignalRGB plugin notes)."""
+MAX_WRITES_PER_SEC = 250  # vendor app measured ~378/s (SignalRGB plugin notes): stay under
+
+
+def frame_interval(leds: int) -> float:
+    """The V2 hub reports 120 LEDs per port before detection: 60 packets per frame, so
+    30 fps would mean ~1800 writes/s. The interval grows with the packet count."""
+    return max(1 / 30, -(-leds // LEDS_PER_PACKET) / MAX_WRITES_PER_SEC)
+
+
+def animate(h, ports: list, name: str, colors: list, speed: float = 1.0):
+    """Streams until Ctrl-C, capped at MAX_WRITES_PER_SEC."""
     t0 = time.time()
+    interval = frame_interval(led_total(ports))
     try:
         while True:
             stream_frame(h, animation_frame(name, ports, time.time() - t0, colors, speed))
-            time.sleep(1 / fps)
+            time.sleep(interval)
     except KeyboardInterrupt:
         pass
 

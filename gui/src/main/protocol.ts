@@ -119,6 +119,13 @@ export function parseStatus(reply: Uint8Array) {
   return { bootFixed: reply[23] === 0x01, selfCheck: reply[24] === 0xff }
 }
 
+/** Write-rate cap: the vendor app was measured sustaining ~378 HID writes/s (SignalRGB plugin
+ *  notes); stay at 250. The V2 hub reports 120 LEDs per port before detection, i.e. 60 packets
+ *  per frame: 30 fps would mean ~1800 writes/s. Frame interval grows with the packet count. */
+export const MAX_WRITES_PER_SEC = 250
+export const frameIntervalMs = (leds: number) =>
+  Math.max(33, Math.ceil((1000 * Math.ceil(leds / LEDS_PER_PACKET)) / MAX_WRITES_PER_SEC))
+
 export const ledTotal = (ports: number[]) => ports.reduce((a, b) => a + b, 0) || PORTS * 12
 const layout = (ports: number[]) => (ports.some(Boolean) ? ports : new Array(PORTS).fill(12))
 
