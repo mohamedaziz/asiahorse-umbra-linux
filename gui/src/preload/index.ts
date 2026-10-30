@@ -10,6 +10,8 @@ const api = {
   fan: (pct: number) => ipcRenderer.invoke('fan', pct),
   curve: (curve: [number, number][] | null) => ipcRenderer.invoke('curve', curve),
   setting: (key: string) => ipcRenderer.invoke('setting', key),
+  orgbScan: () => ipcRenderer.invoke('orgbScan'),
+  orgbZone: (dev: number, zone: number, colors: number[][]) => ipcRenderer.invoke('orgbZone', dev, zone, colors),
   onState: (cb: (s: unknown) => void) => {
     const h = (_e: unknown, s: unknown) => cb(s)
     ipcRenderer.on('state', h)

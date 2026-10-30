@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
 import { cpuTemp, type FanRpm, fanRpms, Hub } from './hub'
+import { OpenRGB, type OrgbDevice } from './openrgb'
 import {
   animationFrame, type AnimationName, CMD, type Curve, curvePercent, effectPacket, type EffectName,
   EFFECTS, type EffectOptions, FAN_MAX, FAN_MIN, fanPacket, ledTotal, native, type RGB,
@@ -17,6 +18,7 @@ const state = {
   animation: null as null | { name: AnimationName, colors: RGB[], speed: number },
   fan: null as number | null, curve: null as Curve | null,
   cpu: null as number | null, error: null as string | null, rpms: [] as FanRpm[],
+  orgb: { connected: false, error: null as string | null, devices: [] as OrgbDevice[] },
   preview: [] as RGB[],
 }
 
@@ -132,6 +134,27 @@ ipcMain.handle('fan', (_e, pct: number) => guard(() => {
 
 ipcMain.handle('curve', (_e, curve: Curve | null) => guard(() => (curve ? startCurve(curve) : stopCurve())))
 
+// Motherboard LEDs through the OpenRGB SDK server (localhost only, OpenRGB does the bus access).
+const orgb = new OpenRGB()
+
+ipcMain.handle('orgbScan', async () => {
+  try {
+    if (!orgb.connected) await orgb.connect()
+    state.orgb = { connected: true, error: null, devices: await orgb.devices() }
+  } catch (e) {
+    orgb.close()
+    state.orgb = { connected: false, error: (e as Error).message, devices: [] }
+  }
+  push()
+})
+
+ipcMain.handle('orgbZone', (_e, dev: number, zone: number, colors: RGB[]) => {
+  try { orgb.setZone(dev, zone, colors) } catch (e) {
+    state.orgb = { ...state.orgb, connected: false, error: (e as Error).message }
+    push()
+  }
+})
+
 type SettingKey = 'fanControlBoard' | 'fanControlSoftware' | 'bootEffectMemory' | 'bootEffectFixed' | 'selfCheckOn' | 'selfCheckOff'
 ipcMain.handle('setting', (_e, key: SettingKey) => guard(async () => {
   if (!(key in CMD)) throw new Error(`unknown setting ${key}`)
@@ -163,4 +186,5 @@ app.on('before-quit', () => {
   stopAnimation()
   try { stopCurve() } catch { /* hub gone */ }
   hub.close()
+  orgb.close()
 })

@@ -1,4 +1,4 @@
-import { Cpu, Fan, Grid3x3, Palette, RefreshCw, Settings as SettingsIcon, Sparkles, Usb } from 'lucide-react'
+import { CircuitBoard, Cpu, Fan, Grid3x3, Palette, RefreshCw, Settings as SettingsIcon, Sparkles, Usb } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type HubState, umbra } from './api'
 import { LedRings } from './components/LedRings'
@@ -6,6 +6,7 @@ import { Animations } from './pages/Animations'
 import { Canvas } from './pages/Canvas'
 import { Effects } from './pages/Effects'
 import { Fans } from './pages/Fans'
+import { Motherboard } from './pages/Motherboard'
 import { Settings } from './pages/Settings'
 
 const PAGES = [
@@ -13,6 +14,7 @@ const PAGES = [
   { id: 'animations', label: 'Animations', icon: Sparkles },
   { id: 'fans', label: 'Ventilateurs', icon: Fan },
   { id: 'canvas', label: 'Canvas', icon: Grid3x3 },
+  { id: 'motherboard', label: 'Carte mère', icon: CircuitBoard },
   { id: 'settings', label: 'Réglages', icon: SettingsIcon },
 ] as const
 type PageId = (typeof PAGES)[number]['id']
@@ -20,6 +22,7 @@ type PageId = (typeof PAGES)[number]['id']
 const EMPTY: HubState = {
   connected: false, node: null, ports: [], lights: 'unknown', effect: null, animation: null,
   fan: null, curve: null, cpu: null, error: null, preview: [], rpms: [],
+  orgb: { connected: false, error: null, devices: [] },
 }
 
 export default function App() {
@@ -70,6 +73,7 @@ export default function App() {
           {page === 'animations' && <Animations s={s} />}
           {page === 'fans' && <Fans s={s} />}
           {page === 'canvas' && <Canvas s={s} />}
+          {page === 'motherboard' && <Motherboard s={s} />}
           {page === 'settings' && <Settings s={s} />}
         </div>
       </main>
