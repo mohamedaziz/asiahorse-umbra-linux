@@ -21,7 +21,7 @@ Usage:
   asiahorse.py topology            # per-port LED counts (read-only)
   asiahorse.py color R G B         # all LEDs one color (0-255 each)
   asiahorse.py off                 # all LEDs dark
-  asiahorse.py fan 10-100          # fan PWM speed, percent (FB)
+  asiahorse.py fan 0-100          # fan PWM speed, percent (FB)
   asiahorse.py effect breath bright=40 00FFFF  # built-in hub effect (03)
   asiahorse.py animate wave 00A0FF A000FF      # software animation, Ctrl-C stops
   asiahorse.py fan-curve 40:20,55:45,62:70,66:100  # fan speed on CPU temp
@@ -310,7 +310,9 @@ SETTINGS = {
     "boot-effect": {"memory": bytes([0x0B, 0xFF]), "fixed": bytes([0x0B, 0x01])},
     "self-check": {"on": bytes([0x0C, 0xFF]), "off": bytes([0x0C, 0x01])},
 }
-FAN_MIN, FAN_MAX = 10, 100  # FB takes a percentage; the vendor slider floors at 10
+# FB takes a percentage. The vendor slider floors at 10; 0 is allowed on purpose (untested:
+# the hub may stop the fans or keep them at minimum speed).
+FAN_MIN, FAN_MAX = 0, 100
 
 # Built-in hub effects ("Sync Effect" page of the vendor app), id = list index.
 EFFECTS = ["static", "rainbow", "gradient-rainbow", "breath", "breath-rainbow",
@@ -418,7 +420,7 @@ def main() -> int:
             print("effects (hub): " + " ".join(EFFECTS))
             print("animations (software): " + " ".join(ANIMATIONS))
             print("animate NAME [speed=N] [RRGGBB ...] | fan-curve [40:20,55:45,62:70,66:100]")
-            print("usage: asiahorse.py status | topology | color R G B | off | fan 10-100 |"
+            print("usage: asiahorse.py status | topology | color R G B | off | fan 0-100 |"
                   " effect NAME [speed=0-5] [dir=0|1] [bright=10-100] [RRGGBB ...] |"
                   " fan-control board|software | lights hardware|software |"
                   " boot-effect memory|fixed | self-check on|off")

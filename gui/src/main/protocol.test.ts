@@ -35,8 +35,9 @@ describe('protocol', () => {
     expect(p[59]).toBe(checksum(p.slice(0, 59)))
   })
 
-  it('clamps fan speed to 10-100 %', () => {
-    expect(fanPacket(3)[5]).toBe(10)
+  it('clamps fan speed to 0-100 %', () => {
+    expect(fanPacket(-5)[5]).toBe(0)
+    expect(fanPacket(3)[5]).toBe(3)
     expect(fanPacket(250)[5]).toBe(100)
   })
 

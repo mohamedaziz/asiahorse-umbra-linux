@@ -54,6 +54,8 @@ export function Fans({ s }: { s: HubState }) {
           options={[{ value: 'manual', label: 'Manuel' }, { value: 'auto', label: 'Auto' }]} />
         {mode === 'manual' && <>
           <Slider label="Vitesse manuelle" value={pct} min={FAN_MIN} max={FAN_MAX} onChange={setPct} format={v => `${v} %`} />
+          {pct < 10 && <div className="banner" role="status">Sous 10 % (plancher de l'app officielle) : les ventilateurs du hub
+            peuvent s'arrêter. Le ventirad du CPU, branché sur la carte mère, n'est pas concerné.</div>}
           <div className="actions">
             {PRESETS.map(p => <button key={p.pct} className="btn btn-ghost" onClick={() => setPct(p.pct)}>{p.label}</button>)}
           </div>

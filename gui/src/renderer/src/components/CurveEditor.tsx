@@ -15,7 +15,7 @@ export function CurveEditor({ curve, onChange, cpu }: { curve: Curve; onChange: 
     const lo = i > 0 ? curve[i - 1][0] + 1 : T_MIN
     const hi = i < curve.length - 1 ? curve[i + 1][0] - 1 : T_MAX
     const next = curve.map(pt => [...pt]) as Curve
-    next[i] = [Math.round(Math.max(lo, Math.min(hi, t))), Math.round(Math.max(10, Math.min(100, p)))]
+    next[i] = [Math.round(Math.max(lo, Math.min(hi, t))), Math.round(Math.max(0, Math.min(100, p)))]
     onChange(next)
   }
 
@@ -59,7 +59,7 @@ export function CurveEditor({ curve, onChange, cpu }: { curve: Curve; onChange: 
       {curve.map(([t, p], i) => (
         <circle key={i} cx={x(t)} cy={y(p)} r={drag === i ? 10 : 8} fill="#0b1120" stroke="#a78bfa" strokeWidth="2.5"
           tabIndex={0} role="slider" aria-label={`Point ${i + 1}`} aria-valuetext={`${t} °C, ${p} %`}
-          aria-valuenow={p} aria-valuemin={10} aria-valuemax={100} style={{ cursor: 'grab' }}
+          aria-valuenow={p} aria-valuemin={0} aria-valuemax={100} style={{ cursor: 'grab' }}
           onPointerDown={e => { (e.target as Element).setPointerCapture?.(e.pointerId); setDrag(i) }}
           onKeyDown={e => {
             const d = { ArrowUp: [0, 5], ArrowDown: [0, -5], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key]

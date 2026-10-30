@@ -9,7 +9,9 @@ export const PAYLOAD = 64
 export const PORTS = 10
 export const LEDS_PER_PACKET = 20
 export const EFFECT_BLOCK = 52
-export const FAN_MIN = 10
+// The vendor slider floors at 10 %; 0 % is allowed here on purpose (user choice). Untested on
+// hardware: the hub may stop the fans or keep them at their minimum speed.
+export const FAN_MIN = 0
 export const FAN_MAX = 100
 
 export type RGB = [number, number, number]
