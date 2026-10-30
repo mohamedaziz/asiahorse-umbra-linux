@@ -21,10 +21,11 @@ export function LedRings({ ports, leds, size = 76 }: { ports: number[]; leds: RG
             {Array.from({ length: n }, (_, i) => {
               const a = (i / n) * 2 * Math.PI - Math.PI / 2
               const [cr, cg, cb] = leds[start + i] ?? [0, 0, 0]
-              const fill = `rgb(${cr},${cg},${cb})`
+              const off = cr + cg + cb < 24
+              const fill = off ? 'rgba(148,163,184,0.22)' : `rgb(${cr},${cg},${cb})`
               return (
                 <circle key={i} cx={size / 2 + r * Math.cos(a)} cy={size / 2 + r * Math.sin(a)} r={3.6}
-                  fill={fill} style={{ filter: `drop-shadow(0 0 4px ${fill})` }} />
+                  fill={fill} style={off ? undefined : { filter: `drop-shadow(0 0 4px ${fill})` }} />
               )
             })}
           </svg>

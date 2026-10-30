@@ -89,10 +89,14 @@ ipcMain.handle('effect', (_e, name: EffectName, opts: EffectOptions) => guard(as
   state.lights = 'effect'
   state.effect = { name, ...opts }
   // the animation runs in the hub firmware: show the chosen colors only
-  const cols = opts.colors?.length ? opts.colors : [[255, 255, 255] as RGB]
   const k = (opts.brightness ?? 60) / 100
-  state.preview = Array.from({ length: ledTotal(hub.ports) }, (_, i) =>
-    cols[name === 'static' ? 0 : i % cols.length].map(v => Math.round(v * k)) as RGB)
+  if (name.includes('rainbow')) {
+    state.preview = animationFrame('rainbow', hub.ports, 0, []).map(c => c.map(v => Math.round(v * k)) as RGB)
+  } else {
+    const cols = opts.colors?.length ? opts.colors : [[255, 255, 255] as RGB]
+    state.preview = Array.from({ length: ledTotal(hub.ports) }, (_, i) =>
+      cols[name === 'static' ? 0 : i % cols.length].map(v => Math.round(v * k)) as RGB)
+  }
 }))
 
 ipcMain.handle('animate', (_e, name: AnimationName, colors: RGB[], speed: number) => guard(async () => {
