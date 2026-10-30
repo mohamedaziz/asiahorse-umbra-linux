@@ -1,0 +1,14 @@
+# Ubuntu 24.04+ restricts unprivileged user namespaces, which Chromium's sandbox needs.
+# This profile allows them for the Electron binary only, the way Ubuntu ships profiles for
+# Chrome or VS Code. Keeps the sandbox on (no --no-sandbox, no SUID chrome-sandbox).
+# Edit the path to your clone, then:
+#   sudo install -m644 apparmor/umbra-electron /etc/apparmor.d/umbra-electron
+#   sudo apparmor_parser -r /etc/apparmor.d/umbra-electron
+abi <abi/4.0>,
+include <tunables/global>
+
+profile umbra-electron /home/*/workspace/asiahorse-umbra-linux/gui/node_modules/.pnpm/electron@*/node_modules/electron/dist/electron flags=(unconfined) {
+  userns,
+
+  include if exists <local/umbra-electron>
+}
