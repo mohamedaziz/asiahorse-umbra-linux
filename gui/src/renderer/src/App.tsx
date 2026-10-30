@@ -60,7 +60,8 @@ export default function App() {
           <span className="chip mono"><Cpu size={15} aria-hidden="true" />{s.cpu === null ? '—' : `${s.cpu.toFixed(1)} °C`}</span>
           <span className="chip mono"><Fan size={15} aria-hidden="true" />{s.fan === null ? '—' : `${s.fan} %`}{s.curve ? ' auto' : ''}</span>
           <button className={`switch ${s.ledsOn ? 'on' : ''}`} role="switch" aria-checked={s.ledsOn}
-            disabled={!s.connected || ledBusy} onClick={toggleLeds}>
+            disabled={!(s.connected || s.orgb.connected) || ledBusy} onClick={toggleLeds}
+            title={`Hub${s.orgb.connected ? ' et carte mère' : ''}`}>
             {s.ledsOn ? <Lightbulb size={16} aria-hidden="true" /> : <LightbulbOff size={16} aria-hidden="true" />}
             LED {s.ledsOn ? 'on' : 'off'}<span className="knob" aria-hidden="true" />
           </button>

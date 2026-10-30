@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
-import { cpuTemp, type FanRpm, fanRpms, Hub } from './hub'
+import { cpuTemp, type FanRpm, fanRpms, findNode, Hub } from './hub'
 import { OpenRGB, type OrgbDevice } from './openrgb'
 import {
   animationFrame, type AnimationName, CMD, type Curve, curvePercent, effectPacket, type EffectName,
@@ -99,7 +99,14 @@ ipcMain.handle('frame', (_e, leds: RGB[], kind: 'canvas' | 'color') => remember(
 
 /** Off = a black frame (the verified streaming path; the vendor "light off" command 06 is
  *  not tested on hardware yet). On = replay the last action, else the hub's own effect. */
-ipcMain.handle('leds', (_e, on: boolean) => guard(async () => {
+ipcMain.handle('leds', async (_e, on: boolean) => {
+  // motherboard first: works even when the hub is unplugged
+  try { setAllMb(on) } catch (e) { state.orgb = { ...state.orgb, connected: false, error: (e as Error).message } }
+  if (!hub.fd && !findNode()) { state.ledsOn = on; push(); return }
+  return switchHubLeds(on)
+})
+
+const switchHubLeds = (on: boolean) => guard(async () => {
   if (on) {
     state.ledsOn = true
     if (lastAction) await lastAction()
@@ -112,7 +119,7 @@ ipcMain.handle('leds', (_e, on: boolean) => guard(async () => {
   for (let i = 0; i < 3; i++) hub.sendFrame(black)
   state.ledsOn = false
   state.preview = black
-}))
+})
 
 async function applyEffect(name: EffectName, opts: EffectOptions) {
   stopAnimation()
@@ -178,7 +185,21 @@ ipcMain.handle('orgbScan', async () => {
   push()
 })
 
+// Last colors sent per motherboard zone (already R/G-swapped by the window), for the LED switch.
+const mbColors = new Map<string, RGB[]>()
+const MB_DEFAULT: RGB = [0, 160, 255] // zones never set in the app: the hardware effect cannot be restored over SDK v3
+
+function setAllMb(on: boolean) {
+  if (!orgb.connected) return
+  for (const d of state.orgb.devices) for (const z of d.zones) {
+    const saved = mbColors.get(`${d.index}/${z.index}`)
+    const colors = on ? saved ?? new Array(z.leds).fill(MB_DEFAULT) : new Array(z.leds).fill([0, 0, 0])
+    orgb.setZone(d.index, z.index, colors)
+  }
+}
+
 ipcMain.handle('orgbZone', (_e, dev: number, zone: number, colors: RGB[]) => {
+  mbColors.set(`${dev}/${zone}`, colors)
   try { orgb.setZone(dev, zone, colors) } catch (e) {
     state.orgb = { ...state.orgb, connected: false, error: (e as Error).message }
     push()
