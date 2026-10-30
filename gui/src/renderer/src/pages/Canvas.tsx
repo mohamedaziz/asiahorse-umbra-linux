@@ -1,9 +1,12 @@
 import { Eraser, PaintBucket, Send } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { type HubState, hexToRgb, type RGB, rgbToHex, umbra } from '../api'
+import { type HubState, hexToRgb, type RGB, rgbToHex, shownPorts, umbra } from '../api'
 
-/** Paint every LED of every port, then send one frame: the hub latches it. */
+const MAX_CELLS = 24 // first LEDs of each port, 1:1 (V2 reports 120 per port before detection)
+
+/** Paint the LEDs of the used ports, then send one frame: the hub latches it. */
 export function Canvas({ s }: { s: HubState }) {
+  const info = shownPorts(s)
   const ports = s.ports.some(Boolean) ? s.ports : new Array(10).fill(0).map((_, i) => (i < 6 ? 12 : 0))
   const total = ports.reduce((a, b) => a + b, 0)
   const [leds, setLeds] = useState<RGB[]>(() => new Array(total).fill([0, 0, 0]))
@@ -36,17 +39,19 @@ export function Canvas({ s }: { s: HubState }) {
         {ports.map((n, p) => {
           const start = offset
           offset += n
-          if (!n) return null
+          const port = info[p]
+          if (!n || port?.used === false) return null
+          const name = port?.name ?? `Port ${p + 1}`
           return (
             <div className="canvas-row" key={p}>
-              <button className="btn btn-ghost port" style={{ minHeight: 32, padding: 0 }} onClick={() => fillPort(start, n)}
-                aria-label={`Remplir le port ${p}`}>P{p}</button>
-              {Array.from({ length: n }, (_, i) => {
+              <button className="btn btn-ghost port" style={{ minHeight: 32, padding: '0 8px', width: 150 }} onClick={() => fillPort(start, n)}
+                aria-label={`Remplir ${name}`} title="Remplir tout le port">{name}</button>
+              {Array.from({ length: Math.min(n, MAX_CELLS) }, (_, i) => {
                 const idx = start + i
                 const [r, g, b] = leds[idx] ?? [0, 0, 0]
                 return (
                   <button key={i} className="cell" style={{ background: `rgb(${r},${g},${b})` }}
-                    aria-label={`Port ${p}, LED ${i + 1}`}
+                    aria-label={`${name}, LED ${i + 1}`}
                     onPointerDown={() => { setPainting(true); paint(idx) }}
                     onPointerEnter={() => painting && paint(idx)}
                     onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); paint(idx) } }} />

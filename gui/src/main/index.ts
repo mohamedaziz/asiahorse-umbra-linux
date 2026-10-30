@@ -1,4 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
+import fs from 'node:fs'
 import path from 'node:path'
 import { cpuTemp, type FanRpm, fanRpms, findNode, Hub } from './hub'
 import { OpenRGB, type OrgbDevice } from './openrgb'
@@ -11,7 +12,19 @@ const hub = new Hub()
 let win: BrowserWindow | null = null
 
 // What the hub is doing, pushed to the window every second.
+// Per-machine port layout (names, which ports have a fan): ~/.config/umbra-control/config.json
+export interface PortInfo { name: string; used: boolean }
+const configFile = () => path.join(app.getPath('userData'), 'config.json')
+function loadPorts(): PortInfo[] {
+  try {
+    const p = JSON.parse(fs.readFileSync(configFile(), 'utf8')).ports
+    if (Array.isArray(p) && p.length === 10) return p
+  } catch { /* first run */ }
+  return Array.from({ length: 10 }, (_, i) => ({ name: `Port ${i + 1}`, used: true }))
+}
+
 const state = {
+  portInfo: [] as PortInfo[],
   connected: false, node: null as string | null, ports: [] as number[],
   lights: 'unknown' as 'unknown' | 'effect' | 'animation' | 'canvas' | 'color',
   effect: null as null | { name: EffectName } & EffectOptions,
@@ -227,7 +240,16 @@ function createWindow() {
   win.on('closed', () => { win = null })
 }
 
+ipcMain.handle('setPorts', (_e, ports: PortInfo[]) => {
+  if (!Array.isArray(ports) || ports.length !== 10) return
+  state.portInfo = ports.map(p => ({ name: String(p.name).slice(0, 40), used: !!p.used }))
+  fs.mkdirSync(path.dirname(configFile()), { recursive: true })
+  fs.writeFileSync(configFile(), JSON.stringify({ ports: state.portInfo }, null, 2))
+  push()
+})
+
 app.whenReady().then(() => {
+  state.portInfo = loadPorts()
   createWindow()
   setInterval(() => { state.cpu = cpuTemp(); state.rpms = fanRpms(); push() }, 1000)
 })

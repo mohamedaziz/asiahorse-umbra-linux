@@ -21,7 +21,7 @@ type PageId = (typeof PAGES)[number]['id']
 
 const EMPTY: HubState = {
   connected: false, node: null, ports: [], lights: 'unknown', effect: null, animation: null,
-  fan: null, curve: null, cpu: null, error: null, preview: [], rpms: [], ledsOn: true,
+  fan: null, curve: null, cpu: null, error: null, preview: [], rpms: [], ledsOn: true, portInfo: [],
   orgb: { connected: false, error: null, devices: [] },
 }
 
@@ -75,7 +75,7 @@ export default function App() {
           <section className="card" aria-labelledby="preview-title">
             <div className="card-head"><h3 id="preview-title">Aperçu</h3>
               <span className="muted">{s.lights === 'effect' ? 'Effet calculé par le hub, aperçu des couleurs seulement' : ''}</span></div>
-            <LedRings ports={s.ports} leds={s.preview} />
+            <LedRings s={s} />
           </section>
           {page === 'effects' && <Effects s={s} />}
           {page === 'animations' && <Animations s={s} />}
