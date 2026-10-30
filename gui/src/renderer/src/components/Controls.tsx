@@ -13,6 +13,7 @@ export function Slider({ label, value, min, max, step = 1, onChange, format }: {
         <span className="mono">{format ? format(value) : value}</span>
       </div>
       <input id={id} type="range" min={min} max={max} step={step} value={value}
+        style={{ '--fill': `${((value - min) / (max - min)) * 100}%` } as React.CSSProperties}
         onChange={e => onChange(Number(e.target.value))} />
     </div>
   )
