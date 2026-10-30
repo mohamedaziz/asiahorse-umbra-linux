@@ -3,6 +3,8 @@
 
 export const VID = 0x1a86
 export const PID = 0xfe05
+// V2 (sold from 2026-10-09): 1a86:fe04 "ROBOBLOQ ARGB2", same HID report descriptor as V1.
+export const PIDS = [0xfe05, 0xfe04]
 export const PAYLOAD = 64
 export const PORTS = 10
 export const LEDS_PER_PACKET = 20

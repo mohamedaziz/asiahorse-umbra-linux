@@ -2,18 +2,19 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {
-  CMD, framePackets, native, parseStatus, parseTopology, PAYLOAD, PID, type RGB, VID,
+  CMD, framePackets, native, parseStatus, parseTopology, PAYLOAD, PIDS, type RGB, VID,
 } from './protocol'
 
 const sleep = (ms: number) => new Promise(r => setTimeout(r, ms))
-const ID = `${VID.toString(16).padStart(8, '0')}:${PID.toString(16).padStart(8, '0')}`.toUpperCase()
+const hex8 = (n: number) => n.toString(16).padStart(8, '0').toUpperCase()
+const IDS = PIDS.map(pid => `${hex8(VID)}:${hex8(pid)}`)
 
 export function findNode(): string | null {
   const base = '/sys/class/hidraw'
   for (const n of fs.existsSync(base) ? fs.readdirSync(base) : []) {
     try {
       const ue = fs.readFileSync(path.join(base, n, 'device/uevent'), 'utf8').toUpperCase()
-      if (ue.includes('HID_ID') && ue.includes(ID)) return `/dev/${n}`
+      if (ue.includes('HID_ID') && IDS.some(id => ue.includes(id))) return `/dev/${n}`
     } catch { /* node vanished while scanning */ }
   }
   return null

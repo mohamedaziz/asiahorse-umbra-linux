@@ -42,6 +42,9 @@ import sys
 import time
 
 VID, PID = 0x1A86, 0xFE05
+# V2 hub (sold from 2026-10-09) enumerates as 1a86:fe04 "ROBOBLOQ ARGB2", same HID
+# report descriptor as V1 (vendor page FF00, 64-byte in/out, no report ID).
+PIDS = (0xFE05, 0xFE04)
 REPORT_ID = 0x00
 PAYLOAD = 64
 LEDS_PER_PACKET = 20
@@ -83,15 +86,15 @@ class Hub:
 
     @staticmethod
     def _find_node() -> str:
-        want = f"{VID:08X}:{PID:08X}"
+        wants = [f"{VID:08X}:{pid:08X}" for pid in PIDS]
         for p in glob.glob("/sys/class/hidraw/hidraw*/device/uevent"):
             try:
                 txt = open(p).read().upper()
             except OSError:
                 continue
-            if "HID_ID" in txt and want in txt:
+            if "HID_ID" in txt and any(w in txt for w in wants):
                 return "/dev/" + p.split("/")[4]
-        raise SystemExit(f"no hidraw node for {want} - hub unplugged, or udev rule missing?")
+        raise SystemExit(f"no hidraw node for {' or '.join(wants)} - hub unplugged, or udev rule missing?")
 
     def close(self):
         if self.fd is not None:
