@@ -19,6 +19,7 @@ export interface HubState {
   cpu: number | null
   error: string | null
   preview: RGB[]
+  rpms: { id: string; chip: string; rpm: number }[]
 }
 
 declare global { interface Window { umbra: UmbraApi } }

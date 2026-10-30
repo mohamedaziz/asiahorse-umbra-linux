@@ -188,6 +188,27 @@ input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px 
 
 .curve { width: 100%; height: auto; touch-action: none; user-select: none; }
 
+/* Measured fan speeds */
+.rpm-list { display: flex; flex-direction: column; gap: var(--space-2); }
+.rpm-row { display: grid; grid-template-columns: 200px 1fr 150px; align-items: center; gap: var(--space-4); min-height: 44px; }
+.rpm-name {
+  display: inline-flex; align-items: center; gap: var(--space-2); justify-self: start; min-height: 36px; padding: 0 var(--space-2);
+  border: 1px solid transparent; border-radius: 8px; background: none; color: var(--text); font: inherit; font-weight: 500; cursor: pointer;
+}
+.rpm-name svg { opacity: 0.4; transition: opacity var(--dur) var(--ease); }
+.rpm-name:hover { border-color: var(--border); }
+.rpm-name:hover svg { opacity: 1; }
+.rpm-name-input {
+  min-height: 36px; padding: 0 var(--space-2); border-radius: 8px; border: 1px solid var(--ring);
+  background: rgba(15, 23, 42, 0.8); color: var(--text); font: inherit;
+}
+.rpm-bar { height: 8px; border-radius: 4px; background: rgba(148, 163, 184, 0.15); overflow: hidden; }
+.rpm-bar > div {
+  height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width 600ms var(--ease);
+}
+.rpm-value { text-align: right; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }

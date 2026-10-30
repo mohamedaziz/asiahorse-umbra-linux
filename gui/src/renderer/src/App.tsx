@@ -19,7 +19,7 @@ type PageId = (typeof PAGES)[number]['id']
 
 const EMPTY: HubState = {
   connected: false, node: null, ports: [], lights: 'unknown', effect: null, animation: null,
-  fan: null, curve: null, cpu: null, error: null, preview: [],
+  fan: null, curve: null, cpu: null, error: null, preview: [], rpms: [],
 }
 
 export default function App() {

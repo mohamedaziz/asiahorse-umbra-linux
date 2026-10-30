@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { type Curve, curvePercent, DEFAULT_CURVE, FAN_MAX, FAN_MIN, type HubState, umbra } from '../api'
 import { Segmented, Slider } from '../components/Controls'
 import { CurveEditor } from '../components/CurveEditor'
+import { FanSpeeds } from '../components/FanSpeeds'
 
 // Presets of the vendor app's manual speed page.
 const PRESETS = [{ label: 'Silencieux', pct: 20 }, { label: 'Bas', pct: 60 }, { label: 'Haut', pct: 80 }, { label: 'Max', pct: 100 }]
@@ -28,7 +29,7 @@ export function Fans({ s }: { s: HubState }) {
     else umbra().curve(null) // stopping the curve sets 100 % first, then the manual value applies
   }
 
-  return (
+  return (<>
     <div className="grid-2">
       <section className="card" aria-labelledby="curve-title">
         <div className="card-head"><h2 id="curve-title">Courbe automatique</h2>
@@ -59,5 +60,6 @@ export function Fans({ s }: { s: HubState }) {
         </>}
       </section>
     </div>
-  )
+    <FanSpeeds rpms={s.rpms} />
+  </>)
 }

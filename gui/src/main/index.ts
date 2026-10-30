@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'node:path'
-import { cpuTemp, Hub } from './hub'
+import { cpuTemp, type FanRpm, fanRpms, Hub } from './hub'
 import {
   animationFrame, type AnimationName, CMD, type Curve, curvePercent, effectPacket, type EffectName,
   EFFECTS, type EffectOptions, FAN_MAX, FAN_MIN, fanPacket, ledTotal, native, type RGB,
@@ -16,7 +16,7 @@ const state = {
   effect: null as null | { name: EffectName } & EffectOptions,
   animation: null as null | { name: AnimationName, colors: RGB[], speed: number },
   fan: null as number | null, curve: null as Curve | null,
-  cpu: null as number | null, error: null as string | null,
+  cpu: null as number | null, error: null as string | null, rpms: [] as FanRpm[],
   preview: [] as RGB[],
 }
 
@@ -155,7 +155,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
   createWindow()
-  setInterval(() => { state.cpu = cpuTemp(); push() }, 1000)
+  setInterval(() => { state.cpu = cpuTemp(); state.rpms = fanRpms(); push() }, 1000)
 })
 
 app.on('window-all-closed', () => app.quit())

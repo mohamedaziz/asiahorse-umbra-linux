@@ -97,6 +97,24 @@ export class Hub {
   }
 }
 
+export interface FanRpm { id: string; chip: string; rpm: number }
+
+/** Measured fan speeds from every hwmon chip that exposes fanN_input (e.g. nct6779 on
+ *  the motherboard). The hub itself reports no RPM over USB (none in the vendor app). */
+export function fanRpms(): FanRpm[] {
+  const base = '/sys/class/hwmon'
+  const out: FanRpm[] = []
+  for (const h of fs.existsSync(base) ? fs.readdirSync(base) : []) {
+    const d = path.join(base, h)
+    try {
+      const chip = fs.readFileSync(path.join(d, 'name'), 'utf8').trim()
+      for (const f of fs.readdirSync(d).filter(f => /^fan\d+_input$/.test(f)).sort())
+        out.push({ id: `${chip}/${f.replace('_input', '')}`, chip, rpm: Number(fs.readFileSync(path.join(d, f), 'utf8')) })
+    } catch { /* chip busy */ }
+  }
+  return out
+}
+
 /** k10temp: Tdie when exposed (1st gen Threadripper Tctl has a +27 C offset), else Tctl. */
 export function cpuTemp(): number | null {
   const base = '/sys/class/hwmon'
