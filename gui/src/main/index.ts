@@ -17,7 +17,7 @@ const state = {
   effect: null as null | { name: EffectName } & EffectOptions,
   animation: null as null | { name: AnimationName, colors: RGB[], speed: number },
   fan: null as number | null, curve: null as Curve | null,
-  cpu: null as number | null, error: null as string | null, rpms: [] as FanRpm[],
+  cpu: null as number | null, error: null as string | null, rpms: [] as FanRpm[], ledsOn: true,
   orgb: { connected: false, error: null as string | null, devices: [] as OrgbDevice[] },
   preview: [] as RGB[],
 }
@@ -84,7 +84,37 @@ ipcMain.handle('refresh', () => guard(async () => {
   return hub.status()
 }))
 
-ipcMain.handle('effect', (_e, name: EffectName, opts: EffectOptions) => guard(async () => {
+// Last lighting action, replayed by the LED "on" switch.
+let lastAction: (() => Promise<void>) | null = null
+const remember = (fn: () => Promise<void>) => guard(async () => {
+  lastAction = fn
+  state.ledsOn = true
+  await fn()
+})
+
+ipcMain.handle('effect', (_e, name: EffectName, opts: EffectOptions) => remember(() => applyEffect(name, opts)))
+ipcMain.handle('animate', (_e, name: AnimationName, colors: RGB[], speed: number) =>
+  remember(() => applyAnimation(name, colors, speed)))
+ipcMain.handle('frame', (_e, leds: RGB[], kind: 'canvas' | 'color') => remember(() => applyFrame(leds, kind)))
+
+/** Off = a black frame (the verified streaming path; the vendor "light off" command 06 is
+ *  not tested on hardware yet). On = replay the last action, else the hub's own effect. */
+ipcMain.handle('leds', (_e, on: boolean) => guard(async () => {
+  if (on) {
+    state.ledsOn = true
+    if (lastAction) await lastAction()
+    else { await hub.hardwareMode(); state.lights = 'effect' }
+    return
+  }
+  stopAnimation()
+  await hub.enterSoftwareMode()
+  const black = new Array(ledTotal(hub.ports)).fill([0, 0, 0]) as RGB[]
+  for (let i = 0; i < 3; i++) hub.sendFrame(black)
+  state.ledsOn = false
+  state.preview = black
+}))
+
+async function applyEffect(name: EffectName, opts: EffectOptions) {
   stopAnimation()
   await hub.hardwareMode()
   hub.write(effectPacket(EFFECTS.indexOf(name), opts))
@@ -99,9 +129,9 @@ ipcMain.handle('effect', (_e, name: EffectName, opts: EffectOptions) => guard(as
     state.preview = Array.from({ length: ledTotal(hub.ports) }, (_, i) =>
       cols[name === 'static' ? 0 : i % cols.length].map(v => Math.round(v * k)) as RGB)
   }
-}))
+}
 
-ipcMain.handle('animate', (_e, name: AnimationName, colors: RGB[], speed: number) => guard(async () => {
+async function applyAnimation(name: AnimationName, colors: RGB[], speed: number) {
   stopAnimation()
   await hub.enterSoftwareMode()
   const t0 = Date.now()
@@ -112,18 +142,18 @@ ipcMain.handle('animate', (_e, name: AnimationName, colors: RGB[], speed: number
     const leds = animationFrame(name, hub.ports, (Date.now() - t0) / 1000, colors, speed)
     try { hub.sendFrame(leds); state.preview = leds } catch (e) { stopAnimation(); state.error = (e as Error).message }
   }, frameIntervalMs(ledTotal(hub.ports)))
-}))
+}
 
 ipcMain.handle('stopAnimation', () => { stopAnimation(); push() })
 
 /** Canvas and solid color: one frame, the hub latches it. */
-ipcMain.handle('frame', (_e, leds: RGB[], kind: 'canvas' | 'color') => guard(async () => {
+async function applyFrame(leds: RGB[], kind: 'canvas' | 'color') {
   stopAnimation()
   await hub.enterSoftwareMode()
   for (let i = 0; i < 3; i++) hub.sendFrame(leds) // repeat: first frame after the switch can be lost
   state.lights = kind
   state.preview = leds
-}))
+}
 
 ipcMain.handle('fan', (_e, pct: number) => guard(() => {
   stopCurve(false)

@@ -1,4 +1,4 @@
-import { CircuitBoard, Cpu, Fan, Grid3x3, Palette, RefreshCw, Settings as SettingsIcon, Sparkles, Usb } from 'lucide-react'
+import { CircuitBoard, Cpu, Fan, Lightbulb, LightbulbOff, Grid3x3, Palette, RefreshCw, Settings as SettingsIcon, Sparkles, Usb } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { type HubState, umbra } from './api'
 import { LedRings } from './components/LedRings'
@@ -21,7 +21,7 @@ type PageId = (typeof PAGES)[number]['id']
 
 const EMPTY: HubState = {
   connected: false, node: null, ports: [], lights: 'unknown', effect: null, animation: null,
-  fan: null, curve: null, cpu: null, error: null, preview: [], rpms: [],
+  fan: null, curve: null, cpu: null, error: null, preview: [], rpms: [], ledsOn: true,
   orgb: { connected: false, error: null, devices: [] },
 }
 
@@ -32,6 +32,8 @@ export default function App() {
 
   useEffect(() => umbra().onState(x => setS(x as HubState)), [])
   const refresh = async () => { setBusy(true); await umbra().refresh(); setBusy(false) }
+  const [ledBusy, setLedBusy] = useState(false)
+  const toggleLeds = async () => { setLedBusy(true); await umbra().leds(!s.ledsOn); setLedBusy(false) }
   useEffect(() => { refresh() }, [])
 
   const title = PAGES.find(p => p.id === page)!.label
@@ -57,6 +59,11 @@ export default function App() {
           </span>
           <span className="chip mono"><Cpu size={15} aria-hidden="true" />{s.cpu === null ? '—' : `${s.cpu.toFixed(1)} °C`}</span>
           <span className="chip mono"><Fan size={15} aria-hidden="true" />{s.fan === null ? '—' : `${s.fan} %`}{s.curve ? ' auto' : ''}</span>
+          <button className={`switch ${s.ledsOn ? 'on' : ''}`} role="switch" aria-checked={s.ledsOn}
+            disabled={!s.connected || ledBusy} onClick={toggleLeds}>
+            {s.ledsOn ? <Lightbulb size={16} aria-hidden="true" /> : <LightbulbOff size={16} aria-hidden="true" />}
+            LED {s.ledsOn ? 'on' : 'off'}<span className="knob" aria-hidden="true" />
+          </button>
           <button className="btn btn-ghost" onClick={refresh} disabled={busy} aria-label="Actualiser l'état du hub">
             <RefreshCw size={16} aria-hidden="true" />Actualiser
           </button>

@@ -6,6 +6,7 @@ const api = {
   effect: (name: string, opts: object) => ipcRenderer.invoke('effect', name, opts),
   animate: (name: string, colors: number[][], speed: number) => ipcRenderer.invoke('animate', name, colors, speed),
   stopAnimation: () => ipcRenderer.invoke('stopAnimation'),
+  leds: (on: boolean) => ipcRenderer.invoke('leds', on),
   frame: (leds: number[][], kind: 'canvas' | 'color') => ipcRenderer.invoke('frame', leds, kind),
   fan: (pct: number) => ipcRenderer.invoke('fan', pct),
   curve: (curve: [number, number][] | null) => ipcRenderer.invoke('curve', curve),

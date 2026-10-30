@@ -20,6 +20,7 @@ export interface HubState {
   error: string | null
   preview: RGB[]
   rpms: { id: string; chip: string; rpm: number }[]
+  ledsOn: boolean
   orgb: {
     connected: boolean; error: string | null
     devices: { index: number; name: string; vendor: string; zones: { index: number; name: string; leds: number }[] }[]
