@@ -7,6 +7,7 @@ const INFO: Record<AnimationName, { label: string; text: string; colors: number 
   rainbow: { label: 'Arc-en-ciel', text: 'Teintes qui tournent sur chaque anneau.', colors: 0 },
   wave: { label: 'Vague', text: 'Deux couleurs qui ondulent autour des anneaux.', colors: 2 },
   breathe: { label: 'Respiration', text: 'Une couleur qui s\'allume et s\'éteint lentement.', colors: 1 },
+  galaxy: { label: 'Galaxie', text: 'Nébuleuse violette qui tourne d\'un ventilateur à l\'autre, étoiles qui scintillent.', colors: 0 },
 }
 
 export function Animations({ s }: { s: HubState }) {

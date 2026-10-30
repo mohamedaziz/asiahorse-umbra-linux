@@ -184,7 +184,24 @@ def stream_color(h, ports: list, r: int, g: int, b: int, frames: int = 5) -> int
     return sent
 
 
-ANIMATIONS = ["rainbow", "wave", "breathe"]
+ANIMATIONS = ["rainbow", "wave", "breathe", "galaxy"]
+
+GALAXY_DEEP, GALAXY_VIOLET, GALAXY_PINK = (10, 0, 60), (110, 0, 190), (180, 0, 120)
+
+
+def galaxy_pixel(p: int, i: int, x: float, t: float, speed: float) -> tuple:
+    """Slow nebula (deep blue to violet, magenta veils) per fan, phase-shifted between fans,
+    plus deterministic twinkling stars. Same maths as gui/src/main/protocol.ts (parity test);
+    floor(v + 0.5) rounding on both sides so the two emit identical bytes."""
+    import math
+    h1 = ((p * 131 + i * 7919) % 1000) / 1000
+    h2 = ((p * 577 + i * 104729) % 1000) / 1000
+    s1 = (math.sin(2 * math.pi * (x + t * 0.08 * speed + p * 0.13)) + 1) / 2
+    s2 = (math.sin(2 * math.pi * (2 * x - t * 0.05 * speed + h1 * 0.3)) + 1) / 2
+    base = [d + (v - d) * s1 for d, v in zip(GALAXY_DEEP, GALAXY_VIOLET)]
+    base = [b + (m - b) * s2 * 0.5 for b, m in zip(base, GALAXY_PINK)]
+    star = max(0.0, math.sin(2 * math.pi * (t * (0.3 + h2 * 0.7) * speed + h1))) ** 24
+    return tuple(math.floor(b + (230 - b) * star + 0.5) for b in base)
 
 
 def animation_frame(name: str, ports: list, t: float, colors: list, speed: float = 1.0) -> list:
@@ -201,6 +218,8 @@ def animation_frame(name: str, ports: list, t: float, colors: list, speed: float
             if name == "rainbow":
                 rgb = colorsys.hsv_to_rgb((x + p / PORTS + t * 0.2 * speed) % 1.0, 1.0, 1.0)
                 leds.append(tuple(round(v * 200) for v in rgb))  # no gamma: keep it below 255
+            elif name == "galaxy":
+                leds.append(galaxy_pixel(p, i, x, t, speed))
             elif name == "wave":
                 k = (math.sin(2 * math.pi * (x - t * 0.5 * speed)) + 1) / 2
                 leds.append(tuple(round(a * k + b * (1 - k)) for a, b in zip(c1, c2)))

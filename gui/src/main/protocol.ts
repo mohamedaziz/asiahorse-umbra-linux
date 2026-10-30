@@ -23,7 +23,7 @@ export const EFFECTS = [
 ] as const
 export type EffectName = (typeof EFFECTS)[number]
 
-export const ANIMATIONS = ['rainbow', 'wave', 'breathe'] as const
+export const ANIMATIONS = ['rainbow', 'wave', 'breathe', 'galaxy'] as const
 export type AnimationName = (typeof ANIMATIONS)[number]
 
 export const DEFAULT_COLORS: RGB[] = [[255, 0, 0], [0, 255, 0], [0, 0, 255], [255, 255, 255]]
@@ -138,6 +138,22 @@ function hsv(h: number, s: number, v: number): RGB {
   return [m[0], m[1], m[2]]
 }
 
+const GALAXY_DEEP: RGB = [10, 0, 60], GALAXY_VIOLET: RGB = [110, 0, 190], GALAXY_PINK: RGB = [180, 0, 120]
+
+/** Slow nebula (deep blue to violet, magenta veils) per fan, phase-shifted between fans, plus
+ *  deterministic twinkling stars. Same maths as asiahorse.py galaxy_pixel (parity test),
+ *  floor(v + 0.5) rounding on both sides so the two emit identical bytes. */
+export function galaxyPixel(p: number, i: number, x: number, t: number, speed: number): RGB {
+  const h1 = ((p * 131 + i * 7919) % 1000) / 1000
+  const h2 = ((p * 577 + i * 104729) % 1000) / 1000
+  const s1 = (Math.sin(2 * Math.PI * (x + t * 0.08 * speed + p * 0.13)) + 1) / 2
+  const s2 = (Math.sin(2 * Math.PI * (2 * x - t * 0.05 * speed + h1 * 0.3)) + 1) / 2
+  let base = GALAXY_DEEP.map((d, j) => d + (GALAXY_VIOLET[j] - d) * s1)
+  base = base.map((b, j) => b + (GALAXY_PINK[j] - b) * s2 * 0.5)
+  const star = Math.max(0, Math.sin(2 * Math.PI * (t * (0.3 + h2 * 0.7) * speed + h1))) ** 24
+  return base.map(b => Math.floor(b + (230 - b) * star + 0.5)) as RGB
+}
+
 /** Software animation frame (no gamma on the diodes: rainbow capped at 200). */
 export function animationFrame(name: AnimationName, ports: number[], t: number,
                                colors: RGB[], speed = 1): RGB[] {
@@ -150,6 +166,8 @@ export function animationFrame(name: AnimationName, ports: number[], t: number,
       if (name === 'rainbow') {
         const [r, g, b] = hsv((((x + p / PORTS + t * 0.2 * speed) % 1) + 1) % 1, 1, 1)
         leds.push([Math.round(r * 200), Math.round(g * 200), Math.round(b * 200)])
+      } else if (name === 'galaxy') {
+        leds.push(galaxyPixel(p, i, x, t, speed))
       } else if (name === 'wave') {
         const k = (Math.sin(2 * Math.PI * (x - t * 0.5 * speed)) + 1) / 2
         leds.push([0, 1, 2].map(j => Math.round(c1[j] * k + c2[j] * (1 - k))) as RGB)

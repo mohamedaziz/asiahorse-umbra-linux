@@ -64,6 +64,14 @@ describe('protocol', () => {
     expect(curvePercent(DEFAULT_CURVE, 99)).toBe(100)
   })
 
+  it('galaxy matches the Python CLI byte for byte', () => {
+    // reference: asiahorse.animation_frame('galaxy', [12,12,12,0,0,0,24,0,0,0], 1.3, [])
+    const f = animationFrame('galaxy', [12, 12, 12, 0, 0, 0, 24, 0, 0, 0], 1.3, [])
+    expect([0, 5, 13, 30, 40, 59].map(k => f[k])).toEqual([
+      [104, 0, 158], [75, 0, 117], [137, 0, 157], [96, 0, 97], [144, 56, 159], [88, 0, 92],
+    ])
+  })
+
   it('animation frames cover every LED with valid bytes', () => {
     const ports = [12, 12, 12, 0, 0, 0, 24, 0, 0, 0]
     for (const a of ANIMATIONS) {
